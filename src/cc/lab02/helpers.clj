@@ -1,9 +1,26 @@
 (ns cc.lab02.helpers
-  (:require [clojure.xml :as xml]
-            [clojure.data.zip.xml :refer [xml-> xml1->]]
-            [clojure.zip :as zip]))
+  (:require #_[clojure.xml :as xml]
+            #_[clojure.data.zip.xml :refer [xml-> xml1->]]
+            #_[clojure.zip :as zip]
+            [clojure.data.json :as json]
+            [camel-snake-kebab.core :as csk]))
 
-(defn xml->map [path]
+(defn json->grammar [path]
+  (let [json-string (slurp path)
+        grammar (json/read-str json-string
+                               :key-fn csk/->kebab-case-keyword)
+        grammar (-> grammar
+                    (update :terms set)
+                    (update :nonterms set)
+                    (update :prods set))]
+    grammar))
+
+(defn grammar->json [path grammar]
+  (let [json-string (json/write-str grammar
+                                    :key-fn csk/->camelCaseString)]
+    (spit path json-string)))
+
+#_(defn xml->grammar [path]
   (let [grammar (zip/xml-zip (xml/parse path))
         terms (->> (xml-> grammar :grammar :terminalsymbols :term)
                    (map zip/node)

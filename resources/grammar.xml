@@ -44,7 +44,7 @@
         <production>
             <lhs name="F" />
             <rhs>
-                <symbol type="nonterm" name="IDENT" />
+                <symbol type="term" name="IDENT" />
             </rhs>
         </production>
         <production>
