@@ -3,8 +3,9 @@
             [clojure.set]))
 
 (defn remove-direct-left-recursion
-  [nt grammar & {:keys [merge-nonterms?]}]
-  (let [old-prods (-> grammar :prods (get nt))
+  [nt grammar & {:keys [merge-nonterms? reset-new-nonterms?]}]
+  (let [grammar (if reset-new-nonterms? (dissoc grammar :new-nonterms) grammar)
+        old-prods (-> grammar :prods (get nt))
         betas (filter #(and (seq %)
                             (-> % (first) (not= nt))) old-prods)
         betas (map vec betas)
@@ -27,18 +28,40 @@
 
 #_(remove-direct-left-recursion "E" (json->grammar "resources/grammar.json"))
 
-;; (defn remove-left-recursion [grammar]
-;;   (loop [curr-nt (-> grammar :nonterms first)
-;;          nts-visited []
-;;          nts-to-visit (-> grammar :nonterms rest)
-;;          new-nonterms #{}]
-;;     (if (nil? curr-nt)
-;;       '()
-;;       (let [prods (for [nt nts-visited
-;;                         chain (-> grammar :prods (get curr-nt))
-;;                         :when (= (first chain) nt)]
-;;                     chain)]
-;;         (recur (first nts-to-visit)
-;;                (conj nts-visited curr-nt)
-;;                (rest nts-to-visit)
-;;                new-nonterms)))))
+(defn insert-rules
+  "Для всех правил вида `target -> [source gamma]` грамматики grammar осуществялется замена
+   нетерминала source правыми частями правил `source -> [sigma_i]`.
+   gamma и sigma i-ые - цепочки терминалов и нетерминалов.
+   Итог - правила вида `target -> [simga_i gamma]`."
+  [target source grammar]
+  (let [source-chains (-> grammar :prods (get source))
+        target-chains (-> grammar :prods (get target))
+        dc-pairs (for [t-chain target-chains
+                       :when (= (first t-chain) source)]
+                   [t-chain (map #(vec (concat % (rest t-chain))) source-chains)])
+        target-chains (reduce (fn [chains [d c]]
+                                (-> chains
+                                    (disj d)
+                                    (concat c)
+                                    (set)))
+                              target-chains
+                              dc-pairs)]
+    (assoc-in grammar [:prods target] target-chains)))
+
+(defn remove-left-recursion [grammar]
+  (loop [curr-nt (-> grammar :nonterms first)
+         nts-visited []
+         nts-to-visit (-> grammar :nonterms rest)
+         grammar grammar]
+    (if (nil? curr-nt)
+      (-> grammar
+          (update :nonterms clojure.set/union (:new-nonterms grammar))
+          (dissoc :new-nonterms))      
+      (let [grammar (reduce #(insert-rules curr-nt %2 %) grammar nts-visited)
+            grammar (remove-direct-left-recursion curr-nt grammar)]
+        (recur (first nts-to-visit)
+               (conj nts-visited curr-nt)
+               (rest nts-to-visit)
+               grammar)))))
+
+#_(remove-left-recursion (json->grammar "resources/grammar.json"))
