@@ -2,7 +2,7 @@
   (:require [cc.lab02.helpers :refer [json->grammar]]
             [clojure.set]))
 
-(defn remove-direct-left-recursin
+(defn remove-direct-left-recursion
   [nt grammar & {:keys [merge-nonterms?]}]
   (let [old-prods (-> grammar :prods (get nt))
         betas (filter #(and (seq %)
@@ -25,4 +25,4 @@
                   (update (if merge-nonterms? :nonterms :new-nonterms)
                           clojure.set/union #{new-nt}))))))
 
-#_(remove-direct-left-recursin "E" (json->grammar "resources/grammar.json"))
+#_(remove-direct-left-recursion "E" (json->grammar "resources/grammar.json"))
