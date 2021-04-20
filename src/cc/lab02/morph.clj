@@ -65,3 +65,27 @@
                grammar)))))
 
 #_(remove-left-recursion (json->grammar "resources/grammar.json"))
+
+(defn find-generating-nonterms
+  "Функция для поиска нетерминалов, пораждающих терминал/нетерминал sym."
+  ([grammar sym]
+   (let [eps-nts (->> (:prods grammar)
+                      (filter #(get (second %) [sym]))
+                      (map first)
+                      (set))]
+     (find-generating-nonterms grammar sym eps-nts)))
+  ([grammar sym eps-nts]
+   (let [new-nts (->> (:prods grammar)
+                      (map (fn [[k v]]
+                             (when (reduce #(or % (every? eps-nts %2)) false v)
+                               k)))
+                      (filter some?)
+                      (set)
+                      (clojure.set/union eps-nts))]
+     (if (= new-nts eps-nts)
+       new-nts
+       (find-generating-nonterms grammar sym new-nts)))))
+
+#_(find-generating-nonterms
+ (json->grammar "resources/grammar.json")
+ "epsilon")
