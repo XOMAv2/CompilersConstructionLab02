@@ -26,3 +26,19 @@
                           clojure.set/union #{new-nt}))))))
 
 #_(remove-direct-left-recursion "E" (json->grammar "resources/grammar.json"))
+
+;; (defn remove-left-recursion [grammar]
+;;   (loop [curr-nt (-> grammar :nonterms first)
+;;          nts-visited []
+;;          nts-to-visit (-> grammar :nonterms rest)
+;;          new-nonterms #{}]
+;;     (if (nil? curr-nt)
+;;       '()
+;;       (let [prods (for [nt nts-visited
+;;                         chain (-> grammar :prods (get curr-nt))
+;;                         :when (= (first chain) nt)]
+;;                     chain)]
+;;         (recur (first nts-to-visit)
+;;                (conj nts-visited curr-nt)
+;;                (rest nts-to-visit)
+;;                new-nonterms)))))
