@@ -1,5 +1,6 @@
 (ns cc.lab02.morph
   (:require [cc.lab02.helpers :refer [json->grammar]]
+            [clojure.math.combinatorics :as combo]
             [clojure.set]))
 
 (defn remove-direct-left-recursion
@@ -56,7 +57,7 @@
     (if (nil? curr-nt)
       (-> grammar
           (update :nonterms clojure.set/union (:new-nonterms grammar))
-          (dissoc :new-nonterms))      
+          (dissoc :new-nonterms))
       (let [grammar (reduce #(insert-rules curr-nt %2 %) grammar nts-visited)
             grammar (remove-direct-left-recursion curr-nt grammar)]
         (recur (first nts-to-visit)
@@ -86,6 +87,73 @@
        new-nts
        (find-generating-nonterms grammar sym new-nts)))))
 
-#_(find-generating-nonterms
- (json->grammar "resources/grammar.json")
- "epsilon")
+#_(find-generating-nonterms (json->grammar "resources/grammar.json") "F")
+
+(defn index-dissoc
+  "remove elem in coll"
+  [coll pos]
+  (concat (take pos coll)
+          (drop (inc pos) coll)))
+
+#_(index-dissoc '(1 2 3) -4)
+
+(defn find-occurrence-indexes
+  [coll searchable-syms]
+  (let [searchable-syms (set searchable-syms)]
+    (->> (map-indexed vector coll)
+         (filter #(contains? searchable-syms (second %)))
+         (map first))))
+
+#_(find-occurrence-indexes ["A" nil "B" "C"] ["A" nil])
+
+#_(combo/selections [0 1] 3)
+#_(combo/subsets [0 1 2])
+
+(defn remove-epsilon-rules [grammar]
+  (let [eps-nts (find-generating-nonterms grammar (:epsilon grammar))
+
+        find-replacement-for-chain
+        (fn [chain]
+          (->> (find-occurrence-indexes chain eps-nts)
+               (combo/subsets)
+               (map (comp reverse sort))
+               (reduce (fn [acc to-dissoc]
+                         (->> (reduce #(index-dissoc % %2) chain to-dissoc)
+                              (vec)
+                              (conj acc)))
+                       [])))
+
+        eliminate-eps-chains
+        (fn [chains]
+          (->> chains
+               (mapcat find-replacement-for-chain)
+               (filter #(and (not= % [(:epsilon grammar)])
+                             (seq %)))
+               (set)))
+
+        prods (reduce (fn [prods [nt chains]]
+                        (assoc prods nt (eliminate-eps-chains chains)))
+                      {}
+                      (:prods grammar))
+        grammar (assoc grammar :prods prods)
+        grammar (if (get eps-nts (:start-symbol grammar))
+                  (let [new-start (str (:start-symbol grammar) "'")]
+                    (-> grammar
+                        (assoc :start-symbol new-start)
+                        (update :nonterms conj new-start)
+                        (assoc-in [:prods new-start] #{[(:start-symbol grammar)]
+                                                       [(:epsilon grammar)]})))
+                  grammar)]
+    grammar))
+
+#_(remove-epsilon-rules (json->grammar "resources/grammar-eps.json"))
+#_(remove-epsilon-rules {:start-symbol "S"
+                         :name "G_eps"
+                         :nonterms #{"S" "C" "B" "A"}
+                         :prods
+                         {"S" #{["A" "B" "C"]}
+                          "C" #{["c"] ["eps"]}
+                          "B" #{["A" "C"]}
+                          "A" #{["a"] ["eps"]}}
+                         :terms #{"a" "c"}
+                         :epsilon "eps"})

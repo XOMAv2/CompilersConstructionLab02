@@ -1,0 +1,13 @@
+{
+    "name": "G_eps",
+    "terms": ["a", "d", "c"],
+    "nonterms": ["S", "A", "B", "C"],
+    "prods": {
+        "S": [["A", "B", "C", "d"]],
+        "A": [["a"], ["eps"]],
+        "B": [["A", "C"]],
+        "C": [["c"], ["eps"]]
+    },
+    "startSymbol": "S",
+    "epsilon": "eps"
+}

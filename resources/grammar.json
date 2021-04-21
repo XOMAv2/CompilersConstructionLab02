@@ -1,5 +1,5 @@
 {
-    "name": "G0",
+    "name": "G_0",
     "terms": ["a", "+", "*", "(", ")"],
     "nonterms": ["E", "T", "F"],
     "prods": {
@@ -10,5 +10,6 @@
         "F": [["(", "E", ")"],
               ["a"]]
     },
-    "startSymbol": "E"
+    "startSymbol": "E",
+    "epsilon": "eps"
 }
