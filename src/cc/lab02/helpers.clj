@@ -31,4 +31,21 @@
                         (json/write-str :key-fn name))]
     (spit path json-string)))
 
-#_(grammar->json "resources/grammar2.json" (json->grammar "resources/grammar.json"))
+#_(grammar->json "resources/grammar-res.json" (json->grammar "resources/grammar.json"))
+
+(defn index-dissoc
+  "remove elem in coll"
+  [coll pos]
+  (concat (take pos coll)
+          (drop (inc pos) coll)))
+
+#_(index-dissoc '(1 2 3) -4)
+
+(defn find-occurrence-indexes
+  [coll searchable-syms]
+  (let [searchable-syms (set searchable-syms)]
+    (->> (map-indexed vector coll)
+         (filter #(contains? searchable-syms (second %)))
+         (map first))))
+
+#_(find-occurrence-indexes ["A" nil "B" "C"] ["A" nil])

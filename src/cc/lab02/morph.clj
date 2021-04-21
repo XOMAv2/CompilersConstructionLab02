@@ -1,5 +1,5 @@
 (ns cc.lab02.morph
-  (:require [cc.lab02.helpers :refer [json->grammar]]
+  (:require [cc.lab02.helpers :refer [json->grammar index-dissoc find-occurrence-indexes]]
             [clojure.math.combinatorics :as combo]
             [clojure.set]))
 
@@ -89,23 +89,6 @@
 
 #_(find-generating-nonterms (json->grammar "resources/grammar.json") "F")
 
-(defn index-dissoc
-  "remove elem in coll"
-  [coll pos]
-  (concat (take pos coll)
-          (drop (inc pos) coll)))
-
-#_(index-dissoc '(1 2 3) -4)
-
-(defn find-occurrence-indexes
-  [coll searchable-syms]
-  (let [searchable-syms (set searchable-syms)]
-    (->> (map-indexed vector coll)
-         (filter #(contains? searchable-syms (second %)))
-         (map first))))
-
-#_(find-occurrence-indexes ["A" nil "B" "C"] ["A" nil])
-
 #_(combo/selections [0 1] 3)
 #_(combo/subsets [0 1 2])
 
@@ -135,6 +118,7 @@
                         (assoc prods nt (eliminate-eps-chains chains)))
                       {}
                       (:prods grammar))
+        
         grammar (assoc grammar :prods prods)
         grammar (if (get eps-nts (:start-symbol grammar))
                   (let [new-start (str (:start-symbol grammar) "'")]
