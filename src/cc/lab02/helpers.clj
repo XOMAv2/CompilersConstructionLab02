@@ -28,7 +28,7 @@
 (defn grammar->json [path grammar]
   (let [json-string (-> grammar
                         (format-top-level-keys csk/->camelCaseString)
-                        (json/write-str :key-fn name))]
+                        (json/write-str :key-fn name :escape-unicode false))]
     (spit path json-string)))
 
 #_(grammar->json "resources/grammar-res.json" (json->grammar "resources/grammar.json"))
