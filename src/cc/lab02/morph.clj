@@ -141,3 +141,13 @@
                           "A" #{["a"] ["eps"]}}
                          :terms #{"a" "c"}
                          :epsilon "eps"})
+
+(defn- longest-common-prefix
+  "Поиск наибольшего общего префикса для произвольного числа векторов vectors."
+  [& vectors]
+  (->> (or vectors '([]))
+       (apply map =)
+       (take-while true?)
+       (count)
+       (#(take % (first vectors)))))
+
