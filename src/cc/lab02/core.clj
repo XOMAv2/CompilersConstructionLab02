@@ -5,14 +5,19 @@
   (:gen-class))
 
 (defn -main
-  [g-left-path g-eps-path]
-  (let [g-left (json->grammar g-left-path)
-        g-left (morph/remove-left-recursion g-left)
-        _ (grammar->json (s/replace g-left-path #".json$" "-result.json") g-left)
+  [g-rec-path g-eps-path g-fact-path]
+  (let [g-rec (json->grammar g-rec-path)
+        g-rec (morph/remove-left-recursion g-rec)
+        _ (grammar->json (s/replace g-rec-path #".json$" "-result.json") g-rec)
 
         g-eps (json->grammar g-eps-path)
         g-eps (morph/remove-epsilon-rules g-eps)
-        _ (grammar->json (s/replace g-eps-path #".json$" "-result.json") g-eps)]))
+        _ (grammar->json (s/replace g-eps-path #".json$" "-result.json") g-eps)
+        
+        g-fact (json->grammar g-fact-path)
+        g-fact (morph/left-factorization g-fact)
+        _ (grammar->json (s/replace g-fact-path #".json$" "-result.json") g-fact)]))
 
 #_(-main "./resources/grammar.json"
-         "./resources/grammar-c.json")
+         "./resources/grammar-c.json"
+         "./resources/grammar-simple.json")
