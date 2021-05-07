@@ -151,3 +151,64 @@
        (count)
        (#(take % (first vectors)))))
 
+(defn- select-rules-for-factorization
+  "Поиск правых частей правил с наибольшим общим префиксом.
+   Результатом является вектор, первый элемент которого - префикс, второй - подмножество правых
+   частей. Если общий префикс отсутствует, то результатом функции будет nil."
+  [nt-rhs]
+  (reduce (fn [_ subset]
+            (when-let [prefix (seq (apply longest-common-prefix subset))]
+              (reduced [prefix subset])))
+          nil
+          (->> (vec nt-rhs)
+               (combo/subsets)
+               (filter #(> (count %) 1))
+               (sort-by count >))))
+
+#_(select-rules-for-factorization #{["1" "2" "3"] ["1" "2"] ["4"]})
+
+(defn left-factorization-1
+  "Поиск самой длинной общей цепочки для каждого из уже имеющихся нетерминалов грамматики и
+   выделение следующих за цепочкой альтернатив в новый нетерминал."
+  [grammar]
+  (reduce (fn [grammar nt]
+            (let [nt-rhs (get (:prods grammar) nt)]
+              (if-let [[prefix rules] (select-rules-for-factorization nt-rhs)]
+                (let [nt-rhs (apply disj nt-rhs rules)
+                      new-nt (str (gensym (str nt "_")))
+                      grammar (update grammar :nonterms conj new-nt)
+                      nt-rhs (conj nt-rhs (conj (vec prefix) new-nt))
+                      grammar (assoc-in grammar [:prods nt] nt-rhs)
+                      prefix-count (count prefix)
+                      new-nt-rhs (->> rules
+                                      (map #(drop prefix-count %))
+                                      (map #(if (empty? %) [(:epsilon grammar)] (vec %)))
+                                      (set))
+                      grammar (assoc-in grammar [:prods new-nt] new-nt-rhs)]
+                  grammar)
+                grammar)))
+          grammar
+          (:nonterms grammar)))
+
+#_(left-factorization-1 {:nonterms #{"A" "B"}
+                         :prods {"A" #{["a" "c" "d1"]
+                                       ["a" "c" "d2"]
+                                       ["a" "c"]
+                                       ["z"]}
+                                 "B" #{["p" "d"]}}
+                         :epsilon "eps"})
+
+(defn left-factorization [grammar]
+  (loop [grammar grammar]
+    (let [new-grammar (left-factorization-1 grammar)]
+      (if (= new-grammar grammar)
+        new-grammar
+        (recur new-grammar)))))
+
+#_(left-factorization {:nonterms #{"A" "B"}
+                       :prods {"A" #{["a" "c" "d" "g" "k1"]
+                                     ["a" "c" "d" "g" "k2"]
+                                     ["a" "c"]
+                                     ["z"]}
+                               "B" #{["p" "d"]}}
+                       :epsilon "eps"})
